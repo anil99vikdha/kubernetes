@@ -44,3 +44,9 @@ minikube document - https://kubernetes.io/docs/tutorials/hello-minikube/
 
 ### port forwat to access webserver
 `kubectl port-forward multi-container-pod 8080:80 &`
+
+
+### Init container
+`kubectl apply -f init_container.yaml`
+`kubectl port-forward pod/web-server-pod 8081:80 &`
+`kubectl get pod web-server-pod -o jsonpath='{.status.podIP}'`
