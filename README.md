@@ -29,7 +29,7 @@ minikube document - https://kubernetes.io/docs/tutorials/hello-minikube/
 
 `kubectl run webserver-pod --image=nginx --dry-run=client -o yaml > pod.yaml`
 
-## Running a multi container port
+## Running a multi container port (SideCar Pattern)
 `kubectl run multi-container-pod \
      --image nginx \
      --dry-run=client -o yaml > multi-container-pod.yaml`
