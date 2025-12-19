@@ -1,52 +1,160 @@
-# Kubernetes Documentation
+# Kubernetes Hands-on Guide
 
-kubernetes official documentation - https://kubernetes.io/docs/home/
+## Official Documentation
 
-minikube document - https://kubernetes.io/docs/tutorials/hello-minikube/
+- **Kubernetes official documentation**: [https://kubernetes.io/docs/home/](https://kubernetes.io/docs/home/)
+- **Minikube tutorial**: [https://kubernetes.io/docs/tutorials/hello-minikube/](https://kubernetes.io/docs/tutorials/hello-minikube/)
 
+---
 
-## Imperative commands 
+## Imperative Commands
+
+### Create single container Pod
 `kubectl run nginx --image=nginx --restart=Never`
 
-`kubectl run webserver-pod \
-      --image nginx:1.14.2 \
-      --restart=Never \
-      --labels=app=webserver,environment=production \
-      --annotations description="This pod runs the nginx web server"`
 
-### To get complete details of a pod
+### Create Pod with labels and annotations
+kubectl run webserver-pod
+--image=nginx:1.14.2
+--restart=Never
+--labels=app=webserver,environment=production
+--annotations=description="This pod runs the nginx web server"
+
+
+### Get Pod details
+Complete details
 `kubectl describe pod webserver-pod`
 
-### To get the details of this pod in yaml format
+YAML format
 `kubectl get pod webserver-pod -o yaml`
 
-### To run a pod and remove after exiting
-`kubectl run -i --tty testpod \
-     --image=busybox \
-     --rm --restart=Never -- sh`
 
-## Declarative approach and generate yaml. 
+### Run temporary Pod (auto-delete)
+kubectl run -i --tty testpod
+--image=busybox
+--rm --restart=Never -- sh
 
+
+## Declarative Approach
+
+### Generate YAML manifest
 `kubectl run webserver-pod --image=nginx --dry-run=client -o yaml > pod.yaml`
 
-## Running a multi container port (SideCar Pattern)
-`kubectl run multi-container-pod \
-     --image nginx \
-     --dry-run=client -o yaml > multi-container-pod.yaml`
 
-`kubectl logs -f multi-container-pod -c `
+## Multi-container Pod (Sidecar Pattern)
+
+### Generate multi-container manifest
+kubectl run multi-container-pod
+--image=nginx
+--dry-run=client -o yaml > multi-container-pod.yaml
+
+
+### View container logs
 `kubectl logs -f multi-container-pod -c webserver`
 `kubectl logs -f multi-container-pod -c log-reader`
 
-### log into container
+
+
+### Exec into containers
 `kubectl exec -it multi-container-pod -c webserver -- sh`
 `kubectl exec -it multi-container-pod -c log-reader -- sh`
 
-### port forwat to access webserver
-`kubectl port-forward multi-container-pod 8080:80 &`
+
+### Port-forward to access
+`kubectl port-forward pod/multi-container-pod 8080:80 &`
 
 
-### Init container
+## Init Container Example
+
 `kubectl apply -f init_container.yaml`
 `kubectl port-forward pod/web-server-pod 8081:80 &`
 `kubectl get pod web-server-pod -o jsonpath='{.status.podIP}'`
+
+## ReplicaSets (A ReplicaSet is a Kubernetes object that ensures a specified number of identical pods are always running.)
+
+**Reference**: [ReplicaSet Documentation](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/)
+
+### Apply ReplicaSet
+`kubectl apply -f replicaset.yaml`
+`kubectl get replicasets` or `kubectl get rs`
+`kubectl get pods`
+
+### Filter Pods by labels
+`kubectl get pods -l tier=frontend,app=guestbook`
+`kubectl get pods -l tier=frontend,app=guestbook -L tier,app`
+
+
+### Test ReplicaSet behavior
+Delete a pod - ReplicaSet will recreate it automatically to keep desired state
+`kubectl delete pod <pod-name>`
+
+Apply pod with same labels - ReplicaSet manages it (no new pod created) with desired no of replicas.
+`kubectl apply -f pod_with_same_labels_rs.yaml`
+
+Scale Replicasets using kubectl
+`kubectl scale rs frontend --replicas=5`
+
+Deleting a Replicaset
+`kubectl delete rs frontend`
+
+
+## Deployments (A Deployment in Kubernetes is used to manage and run your application pods through ReplicaSets.)
+
+**Reference**: [Deployments Documentation](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
+
+Apply Deployment
+`kubectl apply -f deployment.yaml`
+
+Perform a rolling update, replace image nginx from nginx:1.25.4 to nginx:1.14.2
+`k edit deploy nginx-deployment` or modify the deployment.yaml file to update in a declarative way
+
+To verify the status of rollout
+`kubectl rollout status deploy nginx-deployment`
+
+To verify the history of rollout
+`kubectl rollout history deploy nginx-deployment`
+
+To annotate the change of the deployment
+`kubectl annotate deploy nginx-deployment kubernetes.io/change-cause="Updated the deployment with latest Nginx Image"`
+
+To rollback or undo the deployment
+`kubectl rollout undo deploy nginx-deployment`
+
+To pause or freeze deployment - Mainly during incidents you may have to do multiple changes taking all at once.
+`kubectl rollout pause deploy nginx-deployment`
+
+To resume back deployment
+`kubectl rollout resume deploy nginx-deployment`
+
+To check the metrics of pods (cpu/memory)
+
+## HPA (Horizontal Pod Autoscaler)
+
+**Reference**: [HPA Documentation](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/)
+
+To use HPA, metrics addon is to be enabled in minikube. By defauly in EKS its enabled for cluster. 
+
+`minikube addons enable metrics-server`
+
+HPA works for Deployment, Replicaset and Statefulsets.
+`kubectl apply -f hpa.yaml`
+
+Expose the Service 
+`kubectl expose deployment nginx-deployment --type=ClusterIP --port=80`
+
+Test HPA by generating load
+`kubectl run loadgen --image=busybox --restart=Never -- /bin/sh -c "while true; do wget -q -O- nginx-deployment:80; done"`
+
+`kubectl get hpa nginx-hpa -w`
+
+
+## Labels and Selectors
+
+**Reference**: [Labels and Selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
+
+`kubectl apply -f deployment_equality_based_selector.yaml`
+
+`kubectl get pods -l app=payment,tier=backend,environment=prod`
+
+`kubectl apply -f deployment_set_based_selector.yaml`
+
