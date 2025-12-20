@@ -158,3 +158,81 @@ Test HPA by generating load
 
 `kubectl apply -f deployment_set_based_selector.yaml`
 
+
+## Requests and Limits
+
+**Pod Quality of Service (QoS)**:
+
+**Reference:** [Pod Quality of Service](https://kubernetes.io/docs/concepts/workloads/pods/pod-qos/)
+
+**Scenarios 1:** Without Specifying Resources
+When you deploy a pod without specifying any resource requests or limits, Kubernetes will not reserve any specific amount of CPU or memory for the pod. This can lead to overcommitment on the node.
+
+**Scenario 2:** Specifying Requests and Limits
+When you specify resource requests and limits in the pod configuration, Kubernetes uses the request value to ensure the node has sufficient resources to run the pod. However, if multiple pods try to utilize all their limit ranges, the node can become overcommitted (Resource Pressure)
+
+To manage resource overcommitment and prioritize 
+- Best Effort (pod with no reqests and limits set)   **Lowest priority**
+- Guaranteed (pod with same requests and limits set)  **High Priority**
+- Burstable (pod with low requests and high limits set) **Low priority**
+
+**Resource Quota** 
+
+**Reference**: [Resource Quota](https://kubernetes.io/docs/concepts/policy/resource-quotas/)
+A kubernetes cluster can be used by 
+- single
+- multiple teams(Such as shared cluster) Teams get access to specific namespace using RBAC.
+   - It helps to track how much each team is exactly using cluster resources, helpful for cost allocation and ensuring no single team using all cluster resources
+   - Important for compliance, isolating teams to specific namespaces easy to enforce security and operational policies more effectively
+
+So, to ensure that the end users do not use all the resources in the cluster, Kubernetes offers a namespace-scoped object called **ResourceQuota**
+
+To address challenges of shared cluster resources, especially in multi-tenant/team scenarios, its advisable touse Kubernetes Resource Quota object.
+
+It sets hard limits on the resources a namespace can use like CPU, Memory. Each team ensures a fair amounot of cpu/memory to keep cluster healthy and stable.
+
+Primary purpose of using:
+ - Resource Limitation: Ensures no single team can make use all cluster resources
+ - Fair Distribution: Helps to distribute resources based on their needs
+ - Cluster Stability: It keeps cluster stable by preventing resource exhaustion
+ - Cost Management: Helps to control costs and predict by setting resource limits
+ - Isolation: Isolating workloads and organizing each team uses and provides security and complicance
+
+With Resource Quota, we can limit the following per namespace
+1. CPU and Memory Requests and Limits
+2. Pod and Container limits
+3. Persistent volume claims and amout of storage requested by PVC
+4. Max no of services, configmaps, secrets, replicationcontrollers, resourcequota etc
+
+Lets try to explore by testing:
+1. Create namespace trainxops
+`kubectl create ns trainxops`
+
+2. Define resourcequota.yaml with all limits
+`kubectl apply -f resourcequota.yaml`
+
+3. Verify the quota set to namespace
+`kubectl get quota -n trainxops`
+
+also you can use describe command for better readability
+`kubectl describe quota trainxops-quota -n trainxops`
+
+
+Try to create a pod by not specifying requests and limits
+
+`kubectl apply -f pod.yaml -n trainxops`
+
+It fails with error because it falls under Best effort class and might consume all resurces in namespace
+
+Lets set some limits to a pod to assign some default values if nothing set
+
+### Create limitrange.yaml file
+`kubectl apply -f limitrange.yaml`
+
+`kubectl get limitrange -n trainxops`
+
+`kubectl describe limitrange pod-limits -n trainxops`
+
+### Try to create a pod in trainxops namespace
+
+`kubectl apply -f pod.yaml -n trainxops`
