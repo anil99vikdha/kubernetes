@@ -189,7 +189,7 @@ So, to ensure that the end users do not use all the resources in the cluster, Ku
 
 To address challenges of shared cluster resources, especially in multi-tenant/team scenarios, its advisable touse Kubernetes Resource Quota object.
 
-It sets hard limits on the resources a namespace can use like CPU, Memory. Each team ensures a fair amounot of cpu/memory to keep cluster healthy and stable.
+It sets hard limits on the resources a namespace can use like CPU, Memory. Each team ensures a fair amount of cpu/memory to keep cluster healthy and stable.
 
 Primary purpose of using:
  - Resource Limitation: Ensures no single team can make use all cluster resources
