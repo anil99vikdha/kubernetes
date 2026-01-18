@@ -124,3 +124,40 @@ Set swap for small instances
 `sudo systemctl status sonarqube`
 
 tail -f /opt/sonarqube/logs/es.log
+
+
+Other tools:
+===============
+Install Docker on Amazon linux:
+# Update packages
+sudo yum update -y
+
+# Install Docker
+sudo yum install -y docker
+
+# Start Docker service
+sudo systemctl enable docker
+sudo systemctl start docker
+
+# Add Jenkins user to docker group
+sudo usermod -aG docker jenkins
+
+
+Install AWS CLI:
+
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+aws --version
+
+
+Install Kubectl:
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+kubectl version --client
+
+Install Trivy:
+curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sudo sh -s -- -b /usr/local/bin v0.68.2
+trivy --version
